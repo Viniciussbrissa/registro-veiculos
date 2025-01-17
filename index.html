@@ -77,7 +77,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const PIN = "190611";
-            const API_BASE_URL = "https://registro-veiculos-backend.onrender.com"; // Substitua pelo URL do seu backend
+            const API_BASE_URL = "https://sua-api-url.com"; // Substitua pelo URL do seu backend
             const form = document.getElementById('data-form');
             const recordsContainer = document.getElementById('records');
             const authContainer = document.getElementById('auth');
@@ -125,10 +125,10 @@
                 };
 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/registro-veiculos`, {
+                    const response = await fetch(`${API_BASE_URL}/registros`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(registro-veiculos),
+                        body: JSON.stringify(registro),
                     });
                     if (response.ok) {
                         alert('Registro salvo com sucesso!');
@@ -144,7 +144,7 @@
 
             async function loadRecords() {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/registro-veiculos`);
+                    const response = await fetch(`${API_BASE_URL}/registros`);
                     const registros = await response.json();
                     recordList.innerHTML = '';
 
@@ -175,7 +175,7 @@
                         button.addEventListener('click', async (e) => {
                             const id = e.target.dataset.id;
                             try {
-                                await fetch(`${API_BASE_URL}/registro-veiculos/${id}`, { method: 'DELETE' });
+                                await fetch(`${API_BASE_URL}/registros/${id}`, { method: 'DELETE' });
                                 loadRecords();
                             } catch (error) {
                                 console.error(error);
@@ -191,7 +191,7 @@
 
             exportBtn.addEventListener('click', async () => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/registro-veiculos`);
+                    const response = await fetch(`${API_BASE_URL}/registros`);
                     const registros = await response.json();
                     if (registros.length === 0) {
                         alert('Nenhum dado disponível para exportação.');
@@ -201,7 +201,7 @@
                     const worksheet = XLSX.utils.json_to_sheet(registros);
                     const workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
-                    XLSX.writeFile(workbook, 'registro-veiculos.xlsx');
+                    XLSX.writeFile(workbook, 'registros.xlsx');
                 } catch (error) {
                     console.error(error);
                     alert('Erro ao exportar dados!');
