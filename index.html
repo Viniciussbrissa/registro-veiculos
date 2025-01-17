@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Veículos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Navegação -->
+        <div class="nav">
+            <button id="fill-data-btn">Preencher Dados</button>
+            <button id="view-records-btn">Banco de Dados</button>
+        </div>
+
+        <!-- Tela de Login -->
+        <div id="auth" class="auth">
+            <h1>Autenticação</h1>
+            <label for="pin">Digite o PIN:</label>
+            <input type="password" id="pin" placeholder="Digite o PIN" required>
+            <button id="auth-btn">Entrar</button>
+        </div>
+
+        <!-- Tela de Preenchimento -->
+        <form id="data-form" class="active">
+            <h1>Preenchimento</h1>
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required>
+
+            <label for="veiculo">Veículo:</label>
+            <select id="veiculo" name="veiculo" required>
+                <option value="" disabled selected>Selecione um veículo</option>
+                <option value="COURRIER - FEO9971 - Rodízio Segunda-feira">COURRIER - FEO9971 - Rodízio Segunda-feira</option>
+                <option value="COURRIER - FEO9973 - Rodízio Terça-feira">COURRIER - FEO9973 - Rodízio Terça-feira</option>
+                <option value="ÔNIX - GED6I67 - Rodízio Quinta-feira">ÔNIX - GED6I67 - Rodízio Quinta-feira</option>
+                <option value="ÔNIX - CUW0C09 - Rodízio Sexta-feira">ÔNIX - CUW0C09 - Rodízio Sexta-feira</option>
+                <option value="MONTANA - CUS0C20 - Rodízio Sexta-feira">MONTANA - CUS0C20 - Rodízio Sexta-feira</option>
+                <option value="STRADA - TIO3D49 - Rodízio Sexta-feira">STRADA - TIO3D49 - Rodízio Sexta-feira</option>
+            </select>
+
+            <label for="data-inicial">Data Inicial:</label>
+            <input type="date" id="data-inicial" name="data-inicial" required>
+
+            <label for="horario-inicial">Horário Inicial:</label>
+            <input type="time" id="horario-inicial" name="horario-inicial" required>
+
+            <label for="destino">Destino:</label>
+            <input type="text" id="destino" name="destino" required>
+
+            <label for="data-final">Data Final:</label>
+            <input type="date" id="data-final" name="data-final" required>
+
+            <label for="horario-final">Horário Final:</label>
+            <input type="time" id="horario-final" name="horario-final" required>
+
+            <label for="km-rodado">KM Rodado:</label>
+            <input type="number" id="km-rodado" name="km-rodado" required>
+
+            <label for="observacoes">Observações:</label>
+            <textarea id="observacoes" name="observacoes"></textarea>
+
+            <button type="submit">Salvar Registro</button>
+        </form>
+
+        <!-- Tela de Banco de Dados -->
+        <div id="records" class="records">
+            <h1>Banco de Dados</h1>
+            <div id="record-list"></div>
+            <button id="export-btn">Exportar para Excel</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const PIN = "190611";
+            const API_BASE_URL = "https://sua-api-url.com"; // Substitua pelo URL do seu backend
+            const form = document.getElementById('data-form');
+            const recordsContainer = document.getElementById('records');
+            const authContainer = document.getElementById('auth');
+            const recordList = document.getElementById('record-list');
+            const fillDataBtn = document.getElementById('fill-data-btn');
+            const viewRecordsBtn = document.getElementById('view-records-btn');
+            const authBtn = document.getElementById('auth-btn');
+            const pinInput = document.getElementById('pin');
+            const exportBtn = document.getElementById('export-btn');
+
+            fillDataBtn.addEventListener('click', () => {
+                form.classList.add('active');
+                recordsContainer.classList.remove('active');
+                authContainer.classList.remove('active');
+            });
+
+            viewRecordsBtn.addEventListener('click', () => {
+                authContainer.classList.add('active');
+                form.classList.remove('active');
+                recordsContainer.classList.remove('active');
+            });
+
+            authBtn.addEventListener('click', () => {
+                if (pinInput.value === PIN) {
+                    authContainer.classList.remove('active');
+                    recordsContainer.classList.add('active');
+                    loadRecords();
+                } else {
+                    alert('PIN incorreto!');
+                }
+            });
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const registro = {
+                    nome: document.getElementById('nome').value,
+                    veiculo: document.getElementById('veiculo').value,
+                    dataInicial: document.getElementById('data-inicial').value,
+                    horarioInicial: document.getElementById('horario-inicial').value,
+                    destino: document.getElementById('destino').value,
+                    dataFinal: document.getElementById('data-final').value,
+                    horarioFinal: document.getElementById('horario-final').value,
+                    kmRodado: document.getElementById('km-rodado').value,
+                    observacoes: document.getElementById('observacoes').value,
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registro-veiculos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(registro),
+                    });
+                    if (response.ok) {
+                        alert('Registro salvo com sucesso!');
+                        form.reset();
+                    } else {
+                        alert('Erro ao salvar registro!');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao se conectar com a API!');
+                }
+            });
+
+            async function loadRecords() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registros`);
+                    const registros = await response.json();
+                    recordList.innerHTML = '';
+
+                    if (registros.length === 0) {
+                        recordList.innerHTML = '<p>Nenhum registro encontrado.</p>';
+                        return;
+                    }
+
+                    registros.forEach((registro, index) => {
+                        const recordItem = document.createElement('div');
+                        recordItem.classList.add('record-item');
+                        recordItem.innerHTML = `
+                            <p><strong>Nome:</strong> ${registro.nome}</p>
+                            <p><strong>Veículo:</strong> ${registro.veiculo}</p>
+                            <p><strong>Data Inicial:</strong> ${registro.dataInicial}</p>
+                            <p><strong>Horário Inicial:</strong> ${registro.horarioInicial}</p>
+                            <p><strong>Destino:</strong> ${registro.destino}</p>
+                            <p><strong>Data Final:</strong> ${registro.dataFinal}</p>
+                            <p><strong>Horário Final:</strong> ${registro.horarioFinal}</p>
+                            <p><strong>KM Rodado:</strong> ${registro.kmRodado}</p>
+                            <p><strong>Observações:</strong> ${registro.observacoes}</p>
+                            <button class="delete-btn" data-id="${registro.id}">Excluir</button>
+                        `;
+                        recordList.appendChild(recordItem);
+                    });
+
+                    document.querySelectorAll('.delete-btn').forEach((button) => {
+                        button.addEventListener('click', async (e) => {
+                            const id = e.target.dataset.id;
+                            try {
+                                await fetch(`${API_BASE_URL}/registro-veiculos/${id}`, { method: 'DELETE' });
+                                loadRecords();
+                            } catch (error) {
+                                console.error(error);
+                                alert('Erro ao excluir registro!');
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao carregar registros!');
+                }
+            }
+
+            exportBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registro-veiculos`);
+                    const registros = await response.json();
+                    if (registros.length === 0) {
+                        alert('Nenhum dado disponível para exportação.');
+                        return;
+                    }
+
+                    const worksheet = XLSX.utils.json_to_sheet(registros);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
+                    XLSX.writeFile(workbook, 'registro-veiculos.xlsx');
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao exportar dados!');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
