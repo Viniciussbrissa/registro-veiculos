@@ -44,5 +44,5 @@ app.post('/registros', (req, res) => {
 
 // Iniciar servidor
 app.listen(port, () => {
-    console.log(`Servidor rodando em http://localhost:${port}`);
+    console.log(`Servidor rodando em https://registro-veiculos-backend.onrender.com:${port}`);
 });
