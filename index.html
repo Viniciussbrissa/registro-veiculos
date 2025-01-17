@@ -5,108 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Veículos</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
-            background: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            text-align: center;
-        }
-
-        form,
-        .records,
-        .auth {
-            display: none;
-        }
-
-        form.active,
-        .records.active,
-        .auth.active {
-            display: block;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        input,
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        textarea {
-            resize: none;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            border: none;
-            border-radius: 5px;
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .nav {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .nav button {
-            margin: 5px;
-        }
-
-        .record-item {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-
-        .record-item p {
-            margin: 5px 0;
-        }
-
-        .delete-btn {
-            background-color: #dc3545;
-            color: white;
-            cursor: pointer;
-        }
-
-        #export-btn {
-            margin-top: 20px;
-            background-color: #28a745;
-        }
-
-        #export-btn:hover {
-            background-color: #218838;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -177,7 +76,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const PIN = "190611"; // PIN para acesso
+            const PIN = "190611";
+            const API_BASE_URL = "https://sua-api-url.com"; // Substitua pelo URL do seu backend
             const form = document.getElementById('data-form');
             const recordsContainer = document.getElementById('records');
             const authContainer = document.getElementById('auth');
@@ -188,7 +88,6 @@
             const pinInput = document.getElementById('pin');
             const exportBtn = document.getElementById('export-btn');
 
-            // Navegar entre telas
             fillDataBtn.addEventListener('click', () => {
                 form.classList.add('active');
                 recordsContainer.classList.remove('active');
@@ -201,7 +100,6 @@
                 recordsContainer.classList.remove('active');
             });
 
-            // Autenticação
             authBtn.addEventListener('click', () => {
                 if (pinInput.value === PIN) {
                     authContainer.classList.remove('active');
@@ -212,8 +110,7 @@
                 }
             });
 
-            // Salvar registro
-            form.addEventListener('submit', (event) => {
+            form.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const registro = {
                     nome: document.getElementById('nome').value,
@@ -224,68 +121,91 @@
                     dataFinal: document.getElementById('data-final').value,
                     horarioFinal: document.getElementById('horario-final').value,
                     kmRodado: document.getElementById('km-rodado').value,
-                    observacoes: document.getElementById('observacoes').value
+                    observacoes: document.getElementById('observacoes').value,
                 };
 
-                let registros = JSON.parse(localStorage.getItem('registros')) || [];
-                registros.push(registro);
-                localStorage.setItem('registros', JSON.stringify(registros));
-
-                alert('Registro salvo com sucesso!');
-                form.reset();
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registros`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(registro),
+                    });
+                    if (response.ok) {
+                        alert('Registro salvo com sucesso!');
+                        form.reset();
+                    } else {
+                        alert('Erro ao salvar registro!');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao se conectar com a API!');
+                }
             });
 
-            // Carregar registros
-            function loadRecords() {
-                const registros = JSON.parse(localStorage.getItem('registros')) || [];
-                recordList.innerHTML = '';
+            async function loadRecords() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registros`);
+                    const registros = await response.json();
+                    recordList.innerHTML = '';
 
-                if (registros.length === 0) {
-                    recordList.innerHTML = '<p>Nenhum registro encontrado.</p>';
-                    return;
-                }
+                    if (registros.length === 0) {
+                        recordList.innerHTML = '<p>Nenhum registro encontrado.</p>';
+                        return;
+                    }
 
-                registros.forEach((registro, index) => {
-                    const recordItem = document.createElement('div');
-                    recordItem.classList.add('record-item');
-                    recordItem.innerHTML = `
-                        <p><strong>Nome:</strong> ${registro.nome}</p>
-                        <p><strong>Veículo:</strong> ${registro.veiculo}</p>
-                        <p><strong>Data Inicial:</strong> ${registro.dataInicial}</p>
-                        <p><strong>Horário Inicial:</strong> ${registro.horarioInicial}</p>
-                        <p><strong>Destino:</strong> ${registro.destino}</p>
-                        <p><strong>Data Final:</strong> ${registro.dataFinal}</p>
-                        <p><strong>Horário Final:</strong> ${registro.horarioFinal}</p>
-                        <p><strong>KM Rodado:</strong> ${registro.kmRodado}</p>
-                        <p><strong>Observações:</strong> ${registro.observacoes}</p>
-                        <button class="delete-btn" data-index="${index}">Excluir</button>
-                    `;
-                    recordList.appendChild(recordItem);
-                });
-
-                // Excluir registro
-                document.querySelectorAll('.delete-btn').forEach((button) => {
-                    button.addEventListener('click', (e) => {
-                        const index = e.target.dataset.index;
-                        registros.splice(index, 1);
-                        localStorage.setItem('registros', JSON.stringify(registros));
-                        loadRecords();
+                    registros.forEach((registro, index) => {
+                        const recordItem = document.createElement('div');
+                        recordItem.classList.add('record-item');
+                        recordItem.innerHTML = `
+                            <p><strong>Nome:</strong> ${registro.nome}</p>
+                            <p><strong>Veículo:</strong> ${registro.veiculo}</p>
+                            <p><strong>Data Inicial:</strong> ${registro.dataInicial}</p>
+                            <p><strong>Horário Inicial:</strong> ${registro.horarioInicial}</p>
+                            <p><strong>Destino:</strong> ${registro.destino}</p>
+                            <p><strong>Data Final:</strong> ${registro.dataFinal}</p>
+                            <p><strong>Horário Final:</strong> ${registro.horarioFinal}</p>
+                            <p><strong>KM Rodado:</strong> ${registro.kmRodado}</p>
+                            <p><strong>Observações:</strong> ${registro.observacoes}</p>
+                            <button class="delete-btn" data-id="${registro.id}">Excluir</button>
+                        `;
+                        recordList.appendChild(recordItem);
                     });
-                });
+
+                    document.querySelectorAll('.delete-btn').forEach((button) => {
+                        button.addEventListener('click', async (e) => {
+                            const id = e.target.dataset.id;
+                            try {
+                                await fetch(`${API_BASE_URL}/registros/${id}`, { method: 'DELETE' });
+                                loadRecords();
+                            } catch (error) {
+                                console.error(error);
+                                alert('Erro ao excluir registro!');
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao carregar registros!');
+                }
             }
 
-            // Exportar para Excel
-            exportBtn.addEventListener('click', () => {
-                const registros = JSON.parse(localStorage.getItem('registros')) || [];
-                if (registros.length === 0) {
-                    alert('Nenhum dado disponível para exportação.');
-                    return;
-                }
+            exportBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/registros`);
+                    const registros = await response.json();
+                    if (registros.length === 0) {
+                        alert('Nenhum dado disponível para exportação.');
+                        return;
+                    }
 
-                const worksheet = XLSX.utils.json_to_sheet(registros);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
-                XLSX.writeFile(workbook, 'registros.xlsx');
+                    const worksheet = XLSX.utils.json_to_sheet(registros);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
+                    XLSX.writeFile(workbook, 'registros.xlsx');
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao exportar dados!');
+                }
             });
         });
     </script>
